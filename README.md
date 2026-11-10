@@ -1,1 +1,1 @@
-# Piaskownica-gieldowa
+# Symulacja Monte Carlo
