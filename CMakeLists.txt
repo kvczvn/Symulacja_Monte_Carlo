@@ -9,4 +9,19 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 find_package(Threads REQUIRED)
+
+add_library(mcx STATIC
+  src/Random.cpp
+)
+target_include_directories(mcx PUBLIC include)
+target_link_libraries(mcx PUBLIC Threads::Threads)
+if(MSVC)
+  target_compile_options(mcx PUBLIC /W4 /utf-8)
+else()
+  target_compile_options(mcx PUBLIC -Wall -Wextra -Wpedantic)
+endif()
+
 enable_testing()
+add_executable(mcx_tests tests/test_main.cpp)
+target_link_libraries(mcx_tests PRIVATE mcx)
+add_test(NAME unit_tests COMMAND mcx_tests)
