@@ -12,7 +12,6 @@ public:
     virtual std::string name() const = 0;
 };
 
-// Geometryczny ruch Browna: dS = mu*S*dt + sigma*S*dW
 class GeometricBrownianMotion : public PriceModel {
 public:
     GeometricBrownianMotion(double mu, double sigma);
@@ -34,6 +33,19 @@ private:
     double lambda_;      // średnia liczba skoków na rok
     double jumpMean_;    // średni log-rozmiar skoku
     double jumpSigma_;   // rozrzut skoku
+};
+
+
+class MeanRevertingModel : public PriceModel {
+public:
+    MeanRevertingModel(double kappa, double longRunPrice, double sigma);
+    double nextPrice(double current, double dt, Random& rng) const override;
+    std::string name() const override { return "MeanRev"; }
+
+private:
+    double kappa_;
+    double theta_;
+    double sigma_;
 };
 
 }

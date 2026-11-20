@@ -27,6 +27,16 @@ namespace mcx {
         return price;
     }
 
+    MeanRevertingModel::MeanRevertingModel(double kappa, double longRunPrice, double sigma)
+        : kappa_(kappa), theta_(longRunPrice), sigma_(sigma) {
+        if (kappa < 0.0 || longRunPrice <= 0.0 || sigma < 0.0) throw ConfigError("MeanRev: zle parametry");
+    }
+
+    double MeanRevertingModel::nextPrice(double current, double dt, Random& rng) const {
+        double x = std::log(current);
+        x += kappa_ * (std::log(theta_) - x) * dt + sigma_ * std::sqrt(dt) * rng.normal();
+        return std::exp(x);
+    }
 
 
 }
