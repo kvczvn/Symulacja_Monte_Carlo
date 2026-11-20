@@ -14,6 +14,7 @@ add_library(mcx STATIC
   src/Random.cpp
   src/PriceModel.cpp
   src/Stock.cpp
+  src/Index.cpp
 )
 target_include_directories(mcx PUBLIC include)
 target_link_libraries(mcx PUBLIC Threads::Threads)
