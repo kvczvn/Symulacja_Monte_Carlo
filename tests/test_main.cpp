@@ -8,6 +8,7 @@
 #include <vector>
 #include "mcx/Exceptions.hpp"
 #include "mcx/RingBuffer.hpp"
+#include "mcx/PriceModel.hpp"
 
 using namespace mcx;
 
@@ -56,6 +57,43 @@ TEST(ringbuffer_works_with_other_types) {
     RingBuffer<std::string> rb(2);
     rb.push("a"); rb.push("b"); rb.push("c");
     CHECK(rb.toVector() == (std::vector<std::string>{"b", "c"}));
+}
+
+TEST(gbm_matches_theoretical_mean) {
+    // E[S_T] = S0 * exp(mu*T). Jeden krok dt = 1 rok, 40 000 prób.
+    GeometricBrownianMotion m(0.10, 0.20);
+    Random rng(7);
+    double sum = 0.0;
+    const int n = 40000;
+    for (int i = 0; i < n; ++i) sum += m.nextPrice(100.0, 1.0, rng);
+    CHECK(std::abs(sum / n - 100.0 * std::exp(0.10)) < 1.0);
+}
+
+TEST(all_models_stay_positive_via_base_pointer) {
+    std::vector<std::unique_ptr<PriceModel>> models;
+    models.push_back(std::make_unique<GeometricBrownianMotion>(0.1, 0.5));
+    models.push_back(std::make_unique<JumpDiffusionModel>(0.1, 0.3, 10.0, -0.05, 0.2));
+    models.push_back(std::make_unique<MeanRevertingModel>(3.0, 50.0, 0.4));
+    Random rng(1);
+    for (const auto& m : models) {
+        double p = 50.0;
+        for (int i = 0; i < 2000; ++i) p = m->nextPrice(p, 1.0 / 252.0, rng);
+        CHECK(p > 0.0 && std::isfinite(p));
+        CHECK(!m->name().empty());
+    }
+}
+
+TEST(mean_reverting_is_pulled_to_theta) {
+    MeanRevertingModel m(8.0, 100.0, 0.0);   // sigma=0 => deterministycznie
+    Random rng(1);
+    double p = 50.0;
+    for (int i = 0; i < 2000; ++i) p = m.nextPrice(p, 1.0 / 252.0, rng);
+    CHECK(std::abs(p - 100.0) < 1.0);
+}
+
+TEST(models_reject_bad_parameters) {
+    CHECK_THROWS(GeometricBrownianMotion(0.1, -0.2), ConfigError);
+    CHECK_THROWS(MeanRevertingModel(1.0, 0.0, 0.1), ConfigError);
 }
 
 int main() {
