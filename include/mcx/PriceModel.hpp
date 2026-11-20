@@ -24,6 +24,16 @@ protected:  // klasy pochodne mają dostęp do parametrów
     double sigma_;
 };
 
+class JumpDiffusionModel : public GeometricBrownianMotion {
+public:
+    JumpDiffusionModel(double mu, double sigma, double jumpIntensity, double jumpMean, double jumpSigma);
+    double nextPrice(double current, double dt, Random& rng) const override;
+    std::string name() const override { return "Jump"; }
 
+private:
+    double lambda_;      // średnia liczba skoków na rok
+    double jumpMean_;    // średni log-rozmiar skoku
+    double jumpSigma_;   // rozrzut skoku
+};
 
 }
