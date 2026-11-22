@@ -9,6 +9,8 @@
 #include "mcx/Exceptions.hpp"
 #include "mcx/RingBuffer.hpp"
 #include "mcx/PriceModel.hpp"
+#include "mcx/Market.hpp"
+#include "mcx/MarketEvent.hpp"
 
 using namespace mcx;
 
@@ -95,6 +97,26 @@ TEST(models_reject_bad_parameters) {
     CHECK_THROWS(GeometricBrownianMotion(0.1, -0.2), ConfigError);
     CHECK_THROWS(MeanRevertingModel(1.0, 0.0, 0.1), ConfigError);
 }
+
+TEST(market_lookup_and_duplicates) {
+    Market m;
+    m.addStock(std::make_unique<Stock>("AAA", 10.0, std::make_unique<GeometricBrownianMotion>(0.1, 0.2)));
+    CHECK(m.hasStock("AAA"));
+    CHECK_THROWS(m.stock("ZZZ"), UnknownInstrumentError);
+    CHECK_THROWS(m.addStock(std::make_unique<Stock>("AAA", 5.0, std::make_unique<GeometricBrownianMotion>(0.1, 0.2))),
+                 ConfigError);
+}
+
+TEST(crash_event_lowers_prices) {
+    Market m;
+    m.addStock(std::make_unique<Stock>("AAA", 100.0, std::make_unique<GeometricBrownianMotion>(0.0, 0.0)));
+    CrashEvent crash(1.0);
+    Random rng(1);
+    crash.apply(m, rng);
+    CHECK(m.stock("AAA").price() < 96.0);
+    CHECK(m.stock("AAA").history().back() == m.stock("AAA").price());
+}
+
 
 int main() {
     for (const auto& t : registry()) {
