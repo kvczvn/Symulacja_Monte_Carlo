@@ -9,6 +9,7 @@
 #include "mcx/Exceptions.hpp"
 #include "mcx/RingBuffer.hpp"
 #include "mcx/PriceModel.hpp"
+#include "mcx/Portfolio.hpp"
 
 using namespace mcx;
 
@@ -94,6 +95,27 @@ TEST(mean_reverting_is_pulled_to_theta) {
 TEST(models_reject_bad_parameters) {
     CHECK_THROWS(GeometricBrownianMotion(0.1, -0.2), ConfigError);
     CHECK_THROWS(MeanRevertingModel(1.0, 0.0, 0.1), ConfigError);
+}
+
+TEST(portfolio_buy_sell_rules) {
+    Portfolio p(1000.0);
+    p.buy("ALFA", 5, 100.0, 0.0);
+    CHECK(p.shares("ALFA") == 5);
+    CHECK(std::abs(p.cash() - 500.0) < 1e-9);
+    CHECK_THROWS(p.buy("ALFA", 10, 100.0, 0.0), InsufficientFundsError);
+    CHECK_THROWS(p.sell("ALFA", 6, 100.0, 0.0), InsufficientSharesError);
+    CHECK_THROWS(p.sell("BETA", 1, 10.0, 0.0), InsufficientSharesError);
+    CHECK_THROWS(p.buy("ALFA", 0, 100.0, 0.0), InvalidOrderError);
+    p.sell("ALFA", 5, 110.0, 0.0);
+    CHECK(p.shares("ALFA") == 0);
+    CHECK(p.positions().empty());
+    CHECK(std::abs(p.cash() - 1050.0) < 1e-9);
+}
+
+TEST(portfolio_commission_is_charged) {
+    Portfolio p(1000.0);
+    p.buy("X", 1, 100.0, 0.01);
+    CHECK(std::abs(p.cash() - (1000.0 - 101.0)) < 1e-9);
 }
 
 int main() {
