@@ -15,6 +15,7 @@ add_library(mcx STATIC
   src/PriceModel.cpp
   src/Stock.cpp
   src/Index.cpp
+  src/Portfolio.cpp
   src/Market.cpp
   src/MarketEvent.cpp
 )
