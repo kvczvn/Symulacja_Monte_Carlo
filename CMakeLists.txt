@@ -16,6 +16,8 @@ add_library(mcx STATIC
   src/Stock.cpp
   src/Index.cpp
   src/Portfolio.cpp
+  src/Market.cpp
+  src/MarketEvent.cpp
 )
 target_include_directories(mcx PUBLIC include)
 target_link_libraries(mcx PUBLIC Threads::Threads)
