@@ -70,5 +70,26 @@ std::vector<Order> MomentumTrader::decide(const Market& market, Random&) {
     return orders;
 }
 
+MeanReversionTrader::MeanReversionTrader(std::string name, double cash, std::size_t window, double threshold)
+    : Trader(std::move(name), cash), window_(window), threshold_(threshold) {
+    if (window == 0 || threshold <= 0.0) throw ConfigError("MeanReversion: zle parametry");
+}
+
+std::vector<Order> MeanReversionTrader::decide(const Market& market, Random&) {
+    std::vector<Order> orders;
+    for (const Stock* s : market.stocks()) {
+        const auto& h = s->history();
+        if (h.size() < window_) continue;
+        const double avg = sma(h, window_);
+        const int held = portfolio().shares(s->ticker());
+        if (s->price() < avg * (1.0 - threshold_)) {
+            const int q = quantityForBudget(portfolio().cash() * 0.20, s->price());
+            if (q > 0) orders.push_back({s->ticker(), Side::Buy, q});
+        } else if (s->price() > avg * (1.0 + threshold_) && held > 0) {
+            orders.push_back({s->ticker(), Side::Sell, held});
+        }
+    }
+    return orders;
+}
 
 }

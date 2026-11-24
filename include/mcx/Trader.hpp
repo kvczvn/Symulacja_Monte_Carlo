@@ -63,4 +63,14 @@ private:
     std::size_t longW_;
 };
 
+class MeanReversionTrader final : public Trader {
+public:
+    MeanReversionTrader(std::string name, double cash, std::size_t window = 20, double threshold = 0.03);
+    std::vector<Order> decide(const Market& market, Random& rng) override;
+    std::string strategy() const override { return "MeanReversion"; }
+private:
+    std::size_t window_;
+    double threshold_;
+};
+
 }
