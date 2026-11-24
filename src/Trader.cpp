@@ -32,4 +32,19 @@ std::vector<Order> BuyAndHoldTrader::decide(const Market& market, Random&) {
     return orders;
 }
 
+std::vector<Order> RandomTrader::decide(const Market& market, Random& rng) {
+    std::vector<Order> orders;
+    if (rng.uniform() > 0.3) return orders;
+    const auto stocks = market.stocks();
+    const Stock* s = stocks[static_cast<std::size_t>(rng.uniformInt(0, static_cast<int>(stocks.size()) - 1))];
+    if (rng.uniform() < 0.5) {
+        const int q = quantityForBudget(portfolio().cash() * 0.10, s->price());
+        if (q > 0) orders.push_back({s->ticker(), Side::Buy, q});
+    } else {
+        const int held = portfolio().shares(s->ticker());
+        if (held > 0) orders.push_back({s->ticker(), Side::Sell, rng.uniformInt(1, held)});
+    }
+    return orders;
+}
+
 }

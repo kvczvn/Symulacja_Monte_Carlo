@@ -46,5 +46,11 @@ private:
     bool invested_ = false;
 };
 
+class RandomTrader final : public Trader {
+public:
+    using Trader::Trader;
+    std::vector<Order> decide(const Market& market, Random& rng) override;
+    std::string strategy() const override { return "Random"; }
+};
 
 }
