@@ -53,4 +53,14 @@ public:
     std::string strategy() const override { return "Random"; }
 };
 
+class MomentumTrader final : public Trader {
+public:
+    MomentumTrader(std::string name, double cash, std::size_t shortWindow = 5, std::size_t longWindow = 20);
+    std::vector<Order> decide(const Market& market, Random& rng) override;
+    std::string strategy() const override { return "Momentum"; }
+private:
+    std::size_t shortW_;
+    std::size_t longW_;
+};
+
 }

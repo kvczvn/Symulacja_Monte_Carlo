@@ -47,4 +47,28 @@ std::vector<Order> RandomTrader::decide(const Market& market, Random& rng) {
     return orders;
 }
 
+MomentumTrader::MomentumTrader(std::string name, double cash, std::size_t shortWindow, std::size_t longWindow)
+    : Trader(std::move(name), cash), shortW_(shortWindow), longW_(longWindow) {
+    if (shortWindow == 0 || shortWindow >= longWindow) throw ConfigError("Momentum: oczekiwano short < long");
+}
+
+std::vector<Order> MomentumTrader::decide(const Market& market, Random&) {
+    std::vector<Order> orders;
+    for (const Stock* s : market.stocks()) {
+        const auto& h = s->history();
+        if (h.size() < longW_) continue;                       // za mało danych
+        const double fast = sma(h, shortW_);
+        const double slow = sma(h, longW_);
+        const int held = portfolio().shares(s->ticker());
+        if (fast > slow * 1.002) {
+            const int q = quantityForBudget(portfolio().cash() * 0.20, s->price());
+            if (q > 0) orders.push_back({s->ticker(), Side::Buy, q});
+        } else if (fast < slow * 0.998 && held > 0) {
+            orders.push_back({s->ticker(), Side::Sell, held});
+        }
+    }
+    return orders;
+}
+
+
 }
