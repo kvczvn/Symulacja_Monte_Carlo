@@ -12,6 +12,7 @@
 #include "mcx/Portfolio.hpp"
 #include "mcx/Market.hpp"
 #include "mcx/MarketEvent.hpp"
+#include "mcx/Factory.hpp"
 
 using namespace mcx;
 
