@@ -12,6 +12,7 @@
 #include "mcx/Portfolio.hpp"
 #include "mcx/Market.hpp"
 #include "mcx/MarketEvent.hpp"
+#include "mcx/Factory.hpp"
 
 using namespace mcx;
 
@@ -129,6 +130,43 @@ TEST(market_lookup_and_duplicates) {
                  ConfigError);
 }
 
+TEST(index_starts_at_100) {
+    auto sim = buildSimulation(SimulationConfig::defaults(), 1);
+    CHECK(std::abs(sim->market().index()->price() - 100.0) < 1e-9);
+}
+
+TEST(same_seed_gives_same_simulation) {
+    auto a = buildSimulation(SimulationConfig::defaults(), 99);
+    auto b = buildSimulation(SimulationConfig::defaults(), 99);
+    auto c = buildSimulation(SimulationConfig::defaults(), 100);
+    a->run(100); b->run(100); c->run(100);
+    CHECK(a->market().stock("ALFA").price() == b->market().stock("ALFA").price());
+    CHECK(a->market().stock("ALFA").price() != c->market().stock("ALFA").price());
+}
+
+TEST(trader_value_is_never_negative_and_accounting_holds) {
+    auto sim = buildSimulation(SimulationConfig::defaults(), 5);
+    sim->run(250);
+    for (const auto& t : sim->traders()) {
+        CHECK(t->portfolio().cash() >= -1e-6);
+        CHECK(t->portfolio().totalValue(sim->market()) > 0.0);
+    }
+}
+
+TEST(observer_is_notified_every_tick) {
+    struct Counter : SimulationObserver {
+        int ticks = 0; bool finished = false;
+        void onTick(const Simulation&) override { ++ticks; }
+        void onFinish(const Simulation&) override { finished = true; }
+    };
+    auto sim = buildSimulation(SimulationConfig::defaults(), 3);
+    auto counter = std::make_shared<Counter>();
+    sim->attach(counter);
+    sim->run(17);
+    CHECK(counter->ticks == 17);
+    CHECK(counter->finished);
+}
+
 TEST(crash_event_lowers_prices) {
     Market m;
     m.addStock(std::make_unique<Stock>("AAA", 100.0, std::make_unique<GeometricBrownianMotion>(0.0, 0.0)));
@@ -137,6 +175,11 @@ TEST(crash_event_lowers_prices) {
     crash.apply(m, rng);
     CHECK(m.stock("AAA").price() < 96.0);
     CHECK(m.stock("AAA").history().back() == m.stock("AAA").price());
+}
+
+TEST(factory_rejects_unknown_model) {
+    StockSpec bad{"X", 10.0, "magic", {}};
+    CHECK_THROWS(createModel(bad), ConfigError);
 }
 
 
